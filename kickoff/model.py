@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import pytz
+import json
 
 from sqlalchemy import func
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -224,8 +225,9 @@ class ReleaseEvents(db.Model):
         self.group = group
 
     def toDict(self):
+        me = {}
         for c in self.__table__.columns:
-            me[c.name] = getattr(self, c.name)
+            me[c.name] = str(getattr(self, c.name))
         return me
 
     @classmethod
@@ -236,3 +238,17 @@ class ReleaseEvents(db.Model):
 
     def __repr__(self):
         return '<ReleaseEvents %r>' % self.name
+
+
+def getEvents(group=None):
+    filters = {}
+    if group is not None:
+        filters['group'] = group
+    events = []
+    if filters:
+        for r in ReleaseEvents.query.filter_by(**filters):
+            events.append(r)
+    else:
+        for r in ReleaseEvents.query.all():
+            events.append(r)
+    return events

@@ -10,6 +10,7 @@ from kickoff.log import cef_event, CEF_WARN
 from kickoff.views.csrf import CSRFView
 from kickoff.views.releases import ReleasesAPI, Releases, ReleaseAPI, ReleaseL10nAPI, Release
 from kickoff.views.submit import SubmitRelease
+from kickoff.views.status import StatusAPI
 
 log = logging.getLogger(__name__)
 

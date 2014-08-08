@@ -7,7 +7,7 @@ from flask.views import MethodView
 
 from kickoff import db
 from kickoff.log import cef_event, CEF_WARN, CEF_INFO
-from kickoff.model import ReleaseEvents, getEvents
+from kickoff.model import ReleaseEvents, getEvents, getStatus
 from kickoff.views.forms import ReleasesForm, ReleaseAPIForm, getReleaseForm
 
 log = logging.getLogger(__name__)
@@ -22,10 +22,11 @@ def sortedEvents():
 class StatusAPI(MethodView):
 
     def get(self, releaseName):
-        events = {'release': releaseName, 'events': []}
+        events = {'release': releaseName, 'events': [], 'status': {}}
         rows = ReleaseEvents.query.filter_by(name=releaseName)
         for row in rows:
             events['events'].append(row.toDict())
+        events['status'] = getStatus(releaseName)
         return jsonify(events)
 
     def post(self, releaseName):

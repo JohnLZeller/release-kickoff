@@ -252,3 +252,164 @@ def getEvents(group=None):
         for r in ReleaseEvents.query.all():
             events.append(r)
     return events
+
+
+def getStatus(name):
+    if not ReleaseEvents.query.filter_by(name=name).first():
+        return None
+    status = {'tag': tagStatus, 'build': buildStatus, 'repack': repackStatus,
+              'update': updateStatus, 'releasetest': releasetestStatus,
+              'release': releaseStatus, 'postrelease': postreleaseStatus}
+    for step in status:
+        status[step] = status[step](name)
+    status['name'] = name
+    return status
+
+
+def tagStatus(name):
+    tag_events = ReleaseEvents.query.filter_by(name=name, group='tag')
+
+    tags = {'complete': False, 'progress': 0.00}
+    for tag in tag_events:
+        if tag.name:
+            tags['complete'] = True
+            tags['progress'] = 1.00
+    return tags
+
+
+def buildStatus(name):
+    build_events = ReleaseEvents.query.filter_by(name=name, group='build')
+
+    builds = {'complete': False, 'platforms': {}, 'progress': 0.00}
+    for platform in getEnUSPlatforms(name):
+        builds['platforms'][platform] = {'complete': False, 'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+
+    for build in build_events:
+        builds['platforms'][build.platform]['complete'] = True
+        builds['platforms'][build.platform]['chunks']['total'] = 1
+        builds['platforms'][build.platform]['chunks']['num'] = 1
+        builds['platforms'][build.platform]['progress'] = 1.00
+
+    total = 0
+    num = 0
+    for key, build in builds['platforms'].items():
+        total += build['chunks']['total']
+        num += build['chunks']['num']
+    try:
+        builds['progress'] = num / total
+    except ZeroDivisionError:
+        builds['progress'] = 0.00
+
+    if builds['progress'] != 1:
+        return builds
+    builds['complete'] = True
+
+    return builds
+
+
+def repackStatus(name):
+    repack_events = ReleaseEvents.query.filter_by(name=name, group='repack')
+
+    repacks = {'complete': False, 'platforms': {}, 'progress': 0.00}
+    for platform in getEnUSPlatforms(name):
+        repacks['platforms'][platform] = {'complete': False, 'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+    for repack in repack_events:
+        if 'complete' not in repack.event_name:
+            repacks['platforms'][repack.platform]['chunks']['total'] = repack.chunkTotal
+            repacks['platforms'][repack.platform]['chunks']['num'] += 1
+            repacks['platforms'][repack.platform]['progress'] += (1.00/repack.chunkTotal) * 1.00
+        else:
+            repacks['platforms'][repack.platform]['complete'] = True
+
+    total = 0
+    num = 0
+    for key, repack in repacks['platforms'].items():
+        total += repack['chunks']['total']
+        num += repack['chunks']['num']
+        repack['progress'] = round(repack['progress'], 2)
+    try:
+        repacks['progress'] = round(float(num) / float(total), 2)
+    except ZeroDivisionError:
+        builds['progress'] = 0.00
+
+    if repacks['progress'] != 1:
+        return repacks
+    repacks['complete'] = True
+
+    return repacks
+
+
+def updateStatus(name):
+    update_events = ReleaseEvents.query.filter_by(name=name, group='update')
+
+    updates = {'complete': False, 'progress': 0.00}
+    for update in update_events:
+        if update.name:
+            updates['complete'] = True
+            updates['progress'] = 1.00
+    return updates
+
+
+def releasetestStatus(name):
+    releasetest_events = ReleaseEvents.query.filter_by(name=name, group='releasetest')
+
+    releasetests = {'complete': False, 'progress': 0.00}
+    for releasetest in releasetest_events:
+        if releasetest.name:
+            releasetests['complete'] = True
+            releasetests['progress'] = 1.00
+    return releasetests
+
+
+def releaseStatus(name):
+    update_verify_events = ReleaseEvents.query.filter_by(name=name, group='update_verify')
+    release_events = ReleaseEvents.query.filter_by(name=name, group='release')
+
+    update_verifys = {}
+    for platform in getEnUSPlatforms(name):
+        update_verifys[platform] = {'complete': False, 'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+
+    for update_verify in update_verify_events:
+        if 'complete' not in update_verify.event_name:
+            update_verifys[update_verify.platform]['chunks']['total'] = update_verify.chunkTotal
+            update_verifys[update_verify.platform]['chunks']['num'] += 1
+            update_verifys[update_verify.platform]['progress'] += (1.00/update_verify.chunkTotal) * 1.00
+            if update_verifys[update_verify.platform]['chunks']['total'] == \
+                    update_verifys[update_verify.platform]['chunks']['num']:
+                update_verifys[update_verify.platform]['complete'] = True
+        else:
+            update_verifys[update_verify.platform]['complete'] = True
+    data = {'complete': False, 'platforms': update_verifys, 'progress': 0.00}
+
+    total = 0
+    num = 0
+    for key, update_verify in data['platforms'].items():
+        total += update_verify['chunks']['total']
+        num += update_verify['chunks']['num']
+        update_verify['progress'] = round(update_verify['progress'], 2)
+    try:
+        data['progress'] = round(float(num) / float(total), 2)
+    except ZeroDivisionError:
+        builds['progress'] = 0.00
+
+    if release_events.first():
+        data['complete'] = True
+
+    return data
+
+
+def postreleaseStatus(name):
+    events = ReleaseEvents.query.filter_by(name=name)
+
+    for event in events:
+        if 'postrelease' in event.event_name:
+            return {'complete': True, 'progress': 1.00}
+    return {'complete': False, 'progress': 0.00}
+
+
+def getEnUSPlatforms(name):
+    release_tables = {'Firefox': FirefoxRelease, 'Fennec': FennecRelease,
+                      'Thunderbird': ThunderbirdRelease}
+    product = name.split('-')[0].title()
+    release = release_tables[product].query.filter_by(name=name)
+    return json.loads(release[0].enUSPlatforms)

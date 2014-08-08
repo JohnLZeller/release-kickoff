@@ -330,7 +330,7 @@ def repackStatus(name):
     try:
         repacks['progress'] = round(float(num) / float(total), 2)
     except ZeroDivisionError:
-        builds['progress'] = 0.00
+        repacks['progress'] = 0.00
 
     if repacks['progress'] != 1:
         return repacks
@@ -390,7 +390,7 @@ def releaseStatus(name):
     try:
         data['progress'] = round(float(num) / float(total), 2)
     except ZeroDivisionError:
-        builds['progress'] = 0.00
+        data['progress'] = 0.00
 
     if release_events.first():
         data['complete'] = True

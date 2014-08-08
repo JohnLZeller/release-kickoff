@@ -10,6 +10,7 @@ from kickoff.log import cef_event, CEF_WARN
 from kickoff.views.csrf import CSRFView
 from kickoff.views.releases import ReleasesAPI, Releases, ReleaseAPI, ReleaseL10nAPI, Release
 from kickoff.views.submit import SubmitRelease
+from kickoff.views.status import StatusAPI, StatusesAPI, Statuses, Status
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,10 @@ def favicon():
 app.add_url_rule('/submit_release.html', view_func=SubmitRelease.as_view('submit_release'), methods=['GET', 'POST'])
 app.add_url_rule('/release.html', view_func=Release.as_view('release'), methods=['GET', 'POST'])
 app.add_url_rule('/releases.html', view_func=Releases.as_view('releases'), methods=['GET', 'POST'])
+app.add_url_rule('/status/<releaseName>.html', view_func=Status.as_view('status'), methods=['GET'])
 app.add_url_rule('/csrf_token', view_func=CSRFView.as_view('csrf_token'), methods=['GET'])
 app.add_url_rule('/releases', view_func=ReleasesAPI.as_view('releases_api'), methods=['GET'])
 app.add_url_rule('/releases/<releaseName>', view_func=ReleaseAPI.as_view('release_api'), methods=['GET', 'POST'])
 app.add_url_rule('/releases/<releaseName>/l10n', view_func=ReleaseL10nAPI.as_view('release_l10n_api'), methods=['GET'])
+app.add_url_rule('/status', view_func=StatusesAPI.as_view('statuses_api'), methods=['GET'])
+app.add_url_rule('/status/<releaseName>', view_func=StatusAPI.as_view('status_api'), methods=['GET', 'POST'])

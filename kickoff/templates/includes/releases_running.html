@@ -1,0 +1,31 @@
+{% for sta in statuses %}
+{% if loop.first %}
+<table id="complete">
+<thead>
+<tr>
+    <th>Name</th>
+    <th>Tagging</th>
+    <th>Builds</th>
+    <th>Repacks</th>
+    <th>Update</th>
+    <th>Releasetest</th>
+    <th>Release</th>
+    <th>Postrelease</th>
+</tr>
+</thead>
+{% endif %}
+<tr class='complete'>
+  <td><a href="status/{{ sta['name'] }}.html">{{ sta['name'] }}</a></td>
+  <td>{{ sta['tag']['complete'] }}</td>
+  <td>{{ sta['build']['complete'] }}</td>
+  <td>{{ sta['repack']['complete'] }}</td>
+  <td>{{ sta['update']['complete'] }}</td>
+  <td>{{ sta['releasetest']['complete'] }}</td>
+  <td>{{ sta['release']['complete'] }}</td>
+  <td>{{ sta['postrelease']['complete'] }}</td>
+{% if loop.last %}
+</table>
+{% endif %}
+{% else %}
+<h1>No completed releases!</h1>
+{% endfor %}

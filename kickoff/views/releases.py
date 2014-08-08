@@ -7,7 +7,7 @@ from flask.views import MethodView
 
 from kickoff import db
 from kickoff.log import cef_event, CEF_WARN, CEF_INFO
-from kickoff.model import getReleaseTable, getReleases
+from kickoff.model import getReleaseTable, getReleases, getEvents, getStatus, ReleaseEvents
 from kickoff.views.forms import ReleasesForm, ReleaseAPIForm, getReleaseForm
 
 log = logging.getLogger(__name__)
@@ -99,7 +99,14 @@ class Releases(MethodView):
         # http://stackoverflow.com/questions/8463421/how-to-render-my-select-field-with-wtforms
         #form.readyReleases.choices = [(r.name, r.name) for r in getReleases(ready=False)]
         form = ReleasesForm()
-        return render_template('releases.html', releases=sortedReleases(), form=form)
+        releases = sortedReleases()
+        statuses = []
+        for release in releases:
+            if release.ready is True and release.complete is True:
+                status = getStatus(release.name)
+                if status:
+                    statuses.append(status)
+        return render_template('releases.html', releases=sortedReleases(), statuses=statuses, form=form)
 
     def post(self):
         form = ReleasesForm()

@@ -232,6 +232,14 @@ class ReleaseEvents(db.Model):
 
     @classmethod
     def createFromRequest(cls, form):
+        #TODO: This is a really hacky way to remove the possible timezone from the end of
+        #      the form['sent'] string. Ideally, we would convert the timezone to datetime
+        #      also, but datetime.strftime will not parse timezone offsets. Temporary
+        #      solution it to just cut it off and remove it completely
+        if '+' in form['sent'][-6:] or '-' in form['sent'][-6:]:
+            form['sent'] = datetime.strptime(form['sent'][:-6], "%Y-%m-%dT%H:%M:%S")
+        else:
+            form['sent'] = datetime.strptime(form['sent'], "%Y-%m-%dT%H:%M:%S")
         return cls(form['name'], form['sent'], form['event_name'],
                    form['platform'], form['results'], form['chunkNum'],
                    form['chunkTotal'], form['group'])

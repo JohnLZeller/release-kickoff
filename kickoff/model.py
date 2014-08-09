@@ -421,3 +421,4 @@ def getEnUSPlatforms(name):
     product = name.split('-')[0].title()
     release = release_tables[product].query.filter_by(name=name)
     return json.loads(release[0].enUSPlatforms)
+    

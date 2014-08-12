@@ -35,13 +35,14 @@ class StatusAPI(MethodView):
         for field, value in request.form.items():
             releaseEventsUpdate[field] = value
         releaseEventsUpdate['name'] = releaseName
+        releaseEventsUpdate.pop('csrf_token')
 
         # Create a ReleaseEvent object from the request data
         try:
             releaseEventsUpdate = ReleaseEvents.createFromRequest(
                 releaseEventsUpdate)
         except Exception as e:
-            log.error('{} - ({}, {})'.format(e,
+            log.error('User Input Failed - {} - ({}, {})'.format(e,
                       releaseEventsUpdate['name'],
                       releaseEventsUpdate['event_name']))
             cef_event('User Input Failed', CEF_ALERT)

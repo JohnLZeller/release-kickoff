@@ -240,9 +240,9 @@ class ReleaseEvents(db.Model):
             form['sent'] = datetime.strptime(form['sent'][:-6], "%Y-%m-%dT%H:%M:%S")
         else:
             form['sent'] = datetime.strptime(form['sent'], "%Y-%m-%dT%H:%M:%S")
-        return cls(form['name'], form['sent'], form['event_name'],
-                   form['platform'], form['results'], form['chunkNum'],
-                   form['chunkTotal'], form['group'])
+        return cls(form.get('name'), form.get('sent'), form.get('event_name'),
+                   form.get('platform'), form.get('results'), form.get('chunkNum'),
+                   form.get('chunkTotal'), form.get('group'))
 
     def __repr__(self):
         return '<ReleaseEvents %r>' % self.name
@@ -421,4 +421,3 @@ def getEnUSPlatforms(name):
     product = name.split('-')[0].title()
     release = release_tables[product].query.filter_by(name=name)
     return json.loads(release[0].enUSPlatforms)
-    

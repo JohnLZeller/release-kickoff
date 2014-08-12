@@ -22,10 +22,13 @@ def sortedEvents():
 class StatusAPI(MethodView):
 
     def get(self, releaseName):
-        events = {'release': releaseName, 'events': [], 'status': {}}
-        rows = ReleaseEvents.query.filter_by(name=releaseName)
-        for row in rows:
-            events['events'].append(row.toDict())
+        status = {'release': releaseName, 'status': {}}
+        events = request.args.get('events', type=int)
+        if events:
+            events['events'] = []
+            rows = ReleaseEvents.query.filter_by(name=releaseName)
+            for row in rows:
+                events['events'].append(row.toDict())
         events['status'] = getStatus(releaseName)
         return jsonify(events)
 

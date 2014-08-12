@@ -263,7 +263,7 @@ class ReleaseEvents(db.Model):
             return None
         status = {'tag': tagStatus, 'build': buildStatus, 'repack': repackStatus,
                   'update': updateStatus, 'releasetest': releasetestStatus,
-                  'release': releaseStatus, 'postrelease': postreleaseStatus}
+                  'readyforrelease': readyForReleaseStatus, 'postrelease': postreleaseStatus}
         for step in status:
             status[step] = status[step](name)
         status['name'] = name
@@ -281,25 +281,11 @@ class ReleaseEvents(db.Model):
 
         builds = {'platforms': {}, 'progress': 0.00}
         for platform in getEnUSPlatforms(name):
-            builds['platforms'][platform] = {'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+            builds['platforms'][platform] = 0.00
 
         for build in build_events:
-            builds['platforms'][build.platform]['chunks']['total'] = 1
-            builds['platforms'][build.platform]['chunks']['num'] = 1
-            builds['platforms'][build.platform]['progress'] = 1.00
-
-        total = 0
-        num = 0
-        for key, build in builds['platforms'].items():
-            total += build['chunks']['total']
-            num += build['chunks']['num']
-        try:
-            builds['progress'] = num / total
-        except ZeroDivisionError:
-            builds['progress'] = 0.00
-
-        if builds['progress'] != 1:
-            return builds
+            builds['platforms'][build.platform] = 1.00
+            builds['progress'] += (1.00/len(builds['platforms']))
 
         return builds
 
@@ -309,28 +295,19 @@ class ReleaseEvents(db.Model):
 
         repacks = {'platforms': {}, 'progress': 0.00}
         for platform in getEnUSPlatforms(name):
-            repacks['platforms'][platform] = {'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+            repacks['platforms'][platform] = 0.00
+
         for repack in repack_events:
             if 'complete' not in repack.event_name:
-                repacks['platforms'][repack.platform]['chunks']['total'] = repack.chunkTotal
-                repacks['platforms'][repack.platform]['chunks']['num'] += 1
-                repacks['platforms'][repack.platform]['progress'] += (1.00/repack.chunkTotal) * 1.00
+                repacks['platforms'][repack.platform]['progress'] += (1.00/repack.chunkTotal)
             else:
-                repacks['platforms'][repack.platform]['progress'] = 1.00
+                # TODO: Make sure thaty we catch scenario where not all chunks, but have repack_complete
+                repacks[repack.platform]['progress'] = 1.00
 
-        total = 0
-        num = 0
-        for key, repack in repacks['platforms'].items():
-            total += repack['chunks']['total']
-            num += repack['chunks']['num']
-            repack['progress'] = round(repack['progress'], 2)
-        try:
-            repacks['progress'] = round(float(num) / float(total), 2)
-        except ZeroDivisionError:
-            builds['progress'] = 0.00
+        # TODO: Assumes platforms have varying chunkTotal
+        repacks['progress'] = (sum(repacks['platforms'].values()) / len(repacks['platforms']))
 
-        if repacks['progress'] != 1:
-            return repacks
+        # TODO: Ensure that progress is rounded
 
         return repacks
 
@@ -347,36 +324,26 @@ class ReleaseEvents(db.Model):
         return {'progress': 1.00}
 
 
-    def releaseStatus(name):
+    def readyForReleaseStatus(name):
         update_verify_events = ReleaseEvents.query.filter_by(name=name, group='update_verify')
         release_events = ReleaseEvents.query.filter_by(name=name, group='release')
 
         update_verifys = {}
         for platform in getEnUSPlatforms(name):
-            update_verifys[platform] = {'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+            update_verifys[platform] = 0.00
 
         for update_verify in update_verify_events:
             if 'complete' not in update_verify.event_name:
-                update_verifys[update_verify.platform]['chunks']['total'] = update_verify.chunkTotal
-                update_verifys[update_verify.platform]['chunks']['num'] += 1
-                update_verifys[update_verify.platform]['progress'] += (1.00/update_verify.chunkTotal) * 1.00
-                if update_verifys[update_verify.platform]['chunks']['total'] == \
-                        update_verifys[update_verify.platform]['chunks']['num']:
-                    update_verifys[update_verify.platform]['progress'] = 1.00
+                update_verifys[update_verify.platform]['progress'] += (1.00/update_verify.chunkTotal)
             else:
+                # TODO: Make sure that we catch scenario where not all chunks, but have update_verify_complete
                 update_verifys[update_verify.platform]['progress'] = 1.00
         data = {'platforms': update_verifys, 'progress': 0.00}
 
-        total = 0
-        num = 0
-        for key, update_verify in data['platforms'].items():
-            total += update_verify['chunks']['total']
-            num += update_verify['chunks']['num']
-            update_verify['progress'] = round(update_verify['progress'], 2)
-        try:
-            data['progress'] = round(float(num) / float(total), 2)
-        except ZeroDivisionError:
-            builds['progress'] = 0.00
+        # TODO: Assumes platforms have varying chunkTotal
+        data['progress'] = (sum(data['platforms'].values()) / len(data['platforms']))
+
+        # TODO: Ensure that progress is rounded
 
         if release_events.first():
             data['progress'] = 1.00
@@ -391,8 +358,6 @@ class ReleaseEvents(db.Model):
 
 
     def getEnUSPlatforms(name):
-        release_tables = {'Firefox': FirefoxRelease, 'Fennec': FennecRelease,
-                          'Thunderbird': ThunderbirdRelease}
-        product = name.split('-')[0].title()
-        release = release_tables[product].query.filter_by(name=name).first()
+        releaseTable = getReleaseTable(name.split('-')[0].title())
+        release = releaseTable.query.filter_by(name=name).first()
         return json.loads(release.enUSPlatforms)

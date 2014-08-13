@@ -17,6 +17,8 @@ log = logging.getLogger(__name__)
 
 
 PARTIAL_VERSIONS_REGEX = ('^(%sbuild\d+)(,%sbuild\d)*$' % (ANY_VERSION_REGEX, ANY_VERSION_REGEX))
+DATETIME_REGEX = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(-|\+)\d{2}:\d{2}'
+NAME_REGEX = '\w{0,100}-%s-build\d+' % ANY_VERSION_REGEX
 
 # From http://wtforms.simplecodes.com/docs/1.0.2/specific_problems.html#specialty-field-tricks
 class MultiCheckboxField(SelectMultipleField):
@@ -353,3 +355,21 @@ def getReleaseForm(release):
         return ThunderbirdReleaseForm
     else:
         raise ValueError("Can't find release table for release %s" % release)
+
+
+class ReleaseEventsAPIForm(Form):
+    # TODO: Add default=0 to results?
+    name = StringField('Name:', validators=[DataRequired('Name is required.'), Length(0, 100), Regexp(NAME_REGEX, message='Invalid name format.')])
+    sent = StringField('Sent:', validators=[DataRequired('Sent is required.'), Length(25), Regexp(DATETIME_REGEX, message='Invalid sent format.')])
+    event_name = StringField('Event Name:', validators=[DataRequired('Event Name is required.'), Length(0, 150)])
+    platform = StringField('Platform:')
+    results = IntegerField('Results:')
+    chunkNum = IntegerField('Chunk Number:', default=1)
+    chunkTotal = IntegerField('Chunk Total:', default=1)
+    group = StringField('Group:', default='other')
+
+    def validate(self, releaseEvent, *args, **kwargs):
+        valid = Form.validate(self, *args, **kwargs)
+
+        return valid
+

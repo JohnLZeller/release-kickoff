@@ -34,7 +34,20 @@ class StatusAPI(MethodView):
 
     def post(self, releaseName):
         form = ReleaseEventsAPIForm()
-        if not form.validate(request.form):
+        release_event = request.form.copy()
+        release_event['name'] = releaseName
+
+        # Create a ReleaseEvent object from the request data
+        try:
+            releaseEventsUpdate = ReleaseEvents.createFromForm(release_event)
+        except Exception as e:
+            log.error('User Input Failed - {} - ({}, {})'.format(e,
+                      release_event['name'],
+                      release_event['event_name']))
+            cef_event('User Input Failed', CEF_ALERT)
+            return Response(status=400, response=e)
+
+        if not form.validate(releaseEventsUpdate):
             errors = form.errors
             cef_event('User Input Failed', CEF_INFO, **errors)
             return Response(status=400, response=errors.values())
@@ -43,17 +56,6 @@ class StatusAPI(MethodView):
         for field, value in request.form.items():
             releaseEventsUpdate[field] = value
         releaseEventsUpdate['name'] = releaseName
-
-        # Create a ReleaseEvent object from the request data
-        try:
-            releaseEventsUpdate = ReleaseEvents.createFromForm(
-                releaseEventsUpdate)
-        except Exception as e:
-            log.error('User Input Failed - {} - ({}, {})'.format(e,
-                      releaseEventsUpdate['name'],
-                      releaseEventsUpdate['event_name']))
-            cef_event('User Input Failed', CEF_ALERT)
-            return Response(status=400, response=e)
 
         # Check if this ReleaseEvent already exists in the ReleaseEvents table
         if db.session.query(ReleaseEvents).\

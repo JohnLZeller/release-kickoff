@@ -242,7 +242,6 @@ class ReleaseEvents(db.Model):
 
     @classmethod
     def createFromForm(cls, form):
-        # form['sent'] = datetime.strptime(form.get('sent'), "%Y-%m-%dT%H:%M:%S")
         return cls(form.get('name'), form.get('sent'), form.get('event_name'),
                    form.get('platform'), form.get('results'), form.get('chunkNum'),
                    form.get('chunkTotal'), form.get('group'))

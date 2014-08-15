@@ -1,12 +1,14 @@
+import logging
+import re
+
+import simplejson as json
 from ast import literal_eval
 from collections import defaultdict
 from distutils.version import LooseVersion
-import logging
-import simplejson as json
 
 from flask.ext.wtf import SelectMultipleField, ListWidget, CheckboxInput, \
     Form, BooleanField, StringField, Length, TextAreaField, DataRequired, \
-    IntegerField, HiddenField, Regexp, TextInput
+    IntegerField, HiddenField, Regexp, TextInput, DateTimeField
 
 from mozilla.build.versions import ANY_VERSION_REGEX, getPossibleNextVersions
 from mozilla.release.l10n import parsePlainL10nChangesets
@@ -17,8 +19,7 @@ log = logging.getLogger(__name__)
 
 
 PARTIAL_VERSIONS_REGEX = ('^(%sbuild\d+)(,%sbuild\d)*$' % (ANY_VERSION_REGEX, ANY_VERSION_REGEX))
-DATETIME_REGEX = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'
-NAME_REGEX = '\w{0,100}-%s-build\d+' % ANY_VERSION_REGEX
+NAME_REGEX = re.compile('\w{0,100}-%s-build\d+' % ANY_VERSION_REGEX)
 
 # From http://wtforms.simplecodes.com/docs/1.0.2/specific_problems.html#specialty-field-tricks
 class MultiCheckboxField(SelectMultipleField):
@@ -359,8 +360,7 @@ def getReleaseForm(release):
 
 class ReleaseEventsAPIForm(Form):
     # TODO: Add default=0 to results?
-    name = StringField('Name:', validators=[DataRequired('Name is required.'), Length(0, 100), Regexp(NAME_REGEX, message='Invalid name format.')])
-    sent = StringField('Sent:', validators=[DataRequired('Sent is required.'), Length(19), Regexp(DATETIME_REGEX, message='Invalid sent format.')])
+    sent = DateTimeField('Sent:', validators=[DataRequired('Sent is required.')])
     event_name = StringField('Event Name:', validators=[DataRequired('Event Name is required.'), Length(0, 150)])
     platform = StringField('Platform:')
     results = IntegerField('Results:')
@@ -368,6 +368,16 @@ class ReleaseEventsAPIForm(Form):
     chunkTotal = IntegerField('Chunk Total:', default=1)
     group = StringField('Group:', default='other')
 
-    def validate(self, releaseEvent, *args, **kwargs):
-        return Form.validate(self, *args, **kwargs)
+    def validate(self, releaseName, releaseEvent, *args, **kwargs):
+        valid = Form.validate(self, *args, **kwargs)
+
+        if len(releaseName) < 1 or len(releaseName) > 100:
+            valid = False
+        match = NAME_REGEX.match(releaseName)
+        if match:
+            start, end = match.span()
+            if not releaseName[start:end] == releaseName:
+                valid = False
+
+        return valid
 

@@ -215,13 +215,13 @@ class ReleaseEvents(db.Model):
 
     # Dates are always returned in UTC time and ISO8601 format to make them
     # as transportable as possible.
-    @hybrid_property
-    def sent(self):
-        return pytz.utc.localize(self.sent).isoformat()
+    #@hybrid_property
+    #def sent(self):
+    #    return pytz.utc.localize(self.sent).isoformat()
 
-    @sent.setter
-    def sent(self, _sent):
-        self.sent = datetime.strptime(_sent, "%Y-%m-%dT%H:%M:%S")
+    #@sent.setter
+    #def sent(self, _sent):
+    #    self.sent = _sent
 
     def __init__(self, name, sent, event_name, platform, results, chunkNum=0,
                  chunkTotal=0, group=None):
@@ -241,10 +241,10 @@ class ReleaseEvents(db.Model):
         return me
 
     @classmethod
-    def createFromForm(cls, form):
-        return cls(form.get('name'), form.get('sent'), form.get('event_name'),
-                   form.get('platform'), form.get('results'), form.get('chunkNum'),
-                   form.get('chunkTotal'), form.get('group'))
+    def createFromForm(cls, releaseName, form):
+        return cls(releaseName, form.sent.data, form.event_name.data,
+                   form.platform.data, form.results.data, form.chunkNum.data,
+                   form.chunkTotal.data, form.group.data)
 
     def __repr__(self):
         return '<ReleaseEvents %r>' % self.name

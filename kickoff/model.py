@@ -252,8 +252,10 @@ class ReleaseEvents(db.Model):
 
 
     @classmethod
-    def getEvents(cls, group=None):
+    def getEvents(cls, results=0, group=None):
         filters = {}
+        if results is not None:
+            filters['results'] = results
         if group is not None:
             filters['group'] = group
         if filters:
@@ -264,7 +266,7 @@ class ReleaseEvents(db.Model):
 
     @classmethod
     def getStatus(cls, name):
-        if not cls.query.filter_by(name=name).first():
+        if not cls.query.filter_by(name=name, results=0).first():
             return None
         status = {'tag': cls.tagStatus, 'build': cls.buildStatus, 'repack': cls.repackStatus,
                   'update': cls.updateStatus, 'releasetest': cls.releasetestStatus,
@@ -277,14 +279,14 @@ class ReleaseEvents(db.Model):
 
     @classmethod
     def tagStatus(cls, name):
-        if cls.query.filter_by(name=name, group='tag').count() > 0:
-            return {'progress': 0.00}
-        return {'progress': 1.00}
+        if cls.query.filter_by(name=name, results=0, group='tag').count() > 0:
+            return {'progress': 1.00}
+        return {'progress': 0.00}
 
 
     @classmethod
     def buildStatus(cls, name):
-        build_events = cls.query.filter_by(name=name, group='build')
+        build_events = cls.query.filter_by(name=name, results=0, group='build')
 
         builds = {'platforms': {}, 'progress': 0.00}
         for platform in cls.getEnUSPlatforms(name):
@@ -299,7 +301,7 @@ class ReleaseEvents(db.Model):
 
     @classmethod
     def repackStatus(cls, name):
-        repack_events = cls.query.filter_by(name=name, group='repack')
+        repack_events = cls.query.filter_by(name=name, results=0, group='repack')
 
         repacks = {'platforms': {}, 'progress': 0.00}
         for platform in cls.getEnUSPlatforms(name):
@@ -321,22 +323,22 @@ class ReleaseEvents(db.Model):
 
     @classmethod
     def updateStatus(cls, name):
-        if cls.query.filter_by(name=name, group='update').count() > 0:
+        if cls.query.filter_by(name=name, results=0, group='update').count() > 0:
             return {'progress': 1.00}
         return {'progress': 0.00}
 
 
     @classmethod
     def releasetestStatus(cls, name):
-        if cls.query.filter_by(name=name, group='releasetest').count() > 0:
+        if cls.query.filter_by(name=name, results=0, group='releasetest').count() > 0:
             return {'progress': 1.00}
         return {'progress': 0.00}
 
 
     @classmethod
     def readyForReleaseStatus(cls, name):
-        update_verify_events = cls.query.filter_by(name=name, group='update_verify')
-        release_events = cls.query.filter_by(name=name, group='release')
+        update_verify_events = cls.query.filter_by(name=name, results=0, group='update_verify')
+        release_events = cls.query.filter_by(name=name, results=0, group='release')
 
         update_verifys = {}
         for platform in cls.getEnUSPlatforms(name):
@@ -362,7 +364,7 @@ class ReleaseEvents(db.Model):
 
     @classmethod
     def postreleaseStatus(cls, name):
-        if cls.query.filter_by(name=name, group='postrelease').count() > 0:
+        if cls.query.filter_by(name=name, results=0, group='postrelease').count() > 0:
             return {'progress': 1.00}
         return {'progress': 0.00}
 

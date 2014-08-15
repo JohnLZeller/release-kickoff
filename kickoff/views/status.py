@@ -2,7 +2,8 @@ import logging
 import pytz
 import json
 
-from flask import request, jsonify, render_template, Response, redirect, make_response, abort
+from flask import request, jsonify, render_template, Response, redirect, 
+    make_response, abort
 from flask.views import MethodView
 
 from kickoff import db
@@ -39,11 +40,16 @@ class StatusAPI(MethodView):
         try:
             releaseEventsUpdate = ReleaseEvents.createFromForm(releaseName, form)
         except Exception as e:
+            log.error('User Input Failed - {} - ({}, {})'.format(e, releaseName, 
+                                                                 form.event_name))
             cef_event('User Input Failed', CEF_ALERT)
             return Response(status=400, response=e)
 
         if not form.validate(releaseName, releaseEventsUpdate):
             errors = form.errors
+            log.error('User Input Failed - {} - ({}, {})'.format(errors.values(), 
+                                                                 releaseName, 
+                                                                 form.event_name))
             cef_event('User Input Failed', CEF_INFO, **errors)
             return Response(status=400, response=errors.values())
 

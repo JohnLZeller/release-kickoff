@@ -205,7 +205,7 @@ class ReleaseEvents(db.Model):
     """A base class to store release events primarily from buildbot."""
     __tablename__ = 'release_events'
     name = db.Column(db.String(100), nullable=False, primary_key=True)
-    sent = db.Column(db.DateTime(pytz.utc), nullable=False)
+    _sent = db.Column('sent', db.DateTime(pytz.utc), nullable=False)
     event_name = db.Column(db.String(150), nullable=False, primary_key=True)
     platform = db.Column(db.String(500), nullable=True)
     results = db.Column(db.Integer(), nullable=False)
@@ -215,18 +215,19 @@ class ReleaseEvents(db.Model):
 
     # Dates are always returned in UTC time and ISO8601 format to make them
     # as transportable as possible.
-    #@hybrid_property
-    #def sent(self):
-    #    return pytz.utc.localize(self.sent).isoformat()
+    @hybrid_property
+    def sent(self):
+        return pytz.utc.localize(self._sent).isoformat()
 
-    #@sent.setter
-    #def sent(self, _sent):
-    #    self.sent = _sent
+    @sent.setter
+    def sent(self, sent):
+        self._sent = sent
 
     def __init__(self, name, sent, event_name, platform, results, chunkNum=0,
                  chunkTotal=0, group=None):
         self.name = name
-        self.sent = sent
+        if sent:
+            self.sent = sent
         self.event_name = event_name
         self.platform = platform
         self.results = results

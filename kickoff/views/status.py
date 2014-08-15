@@ -2,7 +2,7 @@ import logging
 import pytz
 import json
 
-from flask import request, jsonify, render_template, Response, redirect, 
+from flask import request, jsonify, render_template, Response, redirect, \
     make_response, abort
 from flask.views import MethodView
 
@@ -25,7 +25,7 @@ class StatusAPI(MethodView):
     def get(self, releaseName):
         status = {'status': {}}
         status['status'] = ReleaseEvents.getStatus(releaseName)
-        events = request.args.get('events', type=int)
+        events = request.args.get('events', type=bool)
         if events:
             status['events'] = []
             rows = ReleaseEvents.query.filter_by(name=releaseName)

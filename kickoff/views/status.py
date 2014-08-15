@@ -41,7 +41,7 @@ class StatusAPI(MethodView):
             releaseEventsUpdate = ReleaseEvents.createFromForm(releaseName, form)
         except Exception as e:
             log.error('User Input Failed - {} - ({}, {})'.format(e, releaseName, 
-                                                                 form.event_name))
+                                                                 form.event_name.data))
             cef_event('User Input Failed', CEF_ALERT)
             return Response(status=400, response=e)
 
@@ -49,7 +49,7 @@ class StatusAPI(MethodView):
             errors = form.errors
             log.error('User Input Failed - {} - ({}, {})'.format(errors.values(), 
                                                                  releaseName, 
-                                                                 form.event_name))
+                                                                 form.event_name.data))
             cef_event('User Input Failed', CEF_INFO, **errors)
             return Response(status=400, response=errors.values())
 

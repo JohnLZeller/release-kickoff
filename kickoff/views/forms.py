@@ -373,11 +373,22 @@ class ReleaseEventsAPIForm(Form):
 
         if len(releaseName) < 1 or len(releaseName) > 100:
             valid = False
+            if 'releaseName' not in self.errors:
+                self.errors['releaseName'] = []
+            self.errors['releaseName'].append('Release name too short or too long. Must be greater than 0 and less than 100.')
         match = NAME_REGEX.match(releaseName)
-        if match:
+        if not match:
+            valid = False
+            if 'releaseName' not in self.errors:
+                self.errors['releaseName'] = []
+            self.errors['releaseName'].append('Incorrect release name format.')
+        else:
             start, end = match.span()
             if not releaseName[start:end] == releaseName:
                 valid = False
+                if 'releaseName' not in self.errors:
+                    self.errors['releaseName'] = []
+                self.errors['releaseName'].append('Incorrect release name format.')
 
         return valid
 

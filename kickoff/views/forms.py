@@ -8,7 +8,8 @@ from distutils.version import LooseVersion
 
 from flask.ext.wtf import SelectMultipleField, ListWidget, CheckboxInput, \
     Form, BooleanField, StringField, Length, TextAreaField, DataRequired, \
-    IntegerField, HiddenField, Regexp, TextInput, DateTimeField
+    IntegerField, HiddenField, Regexp, TextInput, DateTimeField, InputRequired, \
+    NumberRange
 
 from mozilla.build.versions import ANY_VERSION_REGEX, getPossibleNextVersions
 from mozilla.release.l10n import parsePlainL10nChangesets
@@ -359,18 +360,18 @@ def getReleaseForm(release):
 
 
 class ReleaseEventsAPIForm(Form):
-    # TODO: Add default=0 to results?
-    sent = DateTimeField('Sent:', validators=[DataRequired('Sent is required.')])
-    event_name = StringField('Event Name:', validators=[DataRequired('Event Name is required.'), Length(0, 150)])
+    sent = DateTimeField('Sent:', validators=[InputRequired('Sent is required.')])
+    event_name = StringField('Event Name:', validators=[InputRequired('Event Name is required.'), Length(0, 150)])
     platform = StringField('Platform:')
-    results = IntegerField('Results:')
-    chunkNum = IntegerField('Chunk Number:', default=1)
-    chunkTotal = IntegerField('Chunk Total:', default=1)
+    results = IntegerField('Results:', default=0, validators=[InputRequired('Results is required.'), NumberRange(min=0, max=0)])
+    chunkNum = IntegerField('Chunk Number:', default=1, validators=[InputRequired('Chunk Num is required.')])
+    chunkTotal = IntegerField('Chunk Total:', default=1, validators=[InputRequired('Chunk Total is required.')])
     group = StringField('Group:', default='other')
 
-    def validate(self, releaseName, releaseEvent, *args, **kwargs):
+    def validate(self, releaseName, *args, **kwargs):
         valid = Form.validate(self, *args, **kwargs)
 
+        # Verify releaseName
         if len(releaseName) < 1 or len(releaseName) > 100:
             valid = False
             if 'releaseName' not in self.errors:

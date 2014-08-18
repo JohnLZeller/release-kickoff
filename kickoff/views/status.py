@@ -34,7 +34,15 @@ class StatusAPI(MethodView):
         return jsonify(status)
 
     def post(self, releaseName):
-        form = ReleaseEventsAPIForm(name=releaseName)
+        form = ReleaseEventsAPIForm()
+
+        if not form.validate(releaseName):
+            errors = form.errors
+            log.error('User Input Failed - {} - ({}, {})'.format(errors.values(), 
+                                                                 releaseName, 
+                                                                 form.event_name.data))
+            cef_event('User Input Failed', CEF_INFO, **errors)
+            return Response(status=400, response=errors.values())
 
         # Create a ReleaseEvent object from the request data
         try:
@@ -44,14 +52,6 @@ class StatusAPI(MethodView):
                                                                  form.event_name.data))
             cef_event('User Input Failed', CEF_ALERT)
             return Response(status=400, response=e)
-
-        if not form.validate(releaseName, releaseEventsUpdate):
-            errors = form.errors
-            log.error('User Input Failed - {} - ({}, {})'.format(errors.values(), 
-                                                                 releaseName, 
-                                                                 form.event_name.data))
-            cef_event('User Input Failed', CEF_INFO, **errors)
-            return Response(status=400, response=errors.values())
 
         # Check if this ReleaseEvent already exists in the ReleaseEvents table
         if db.session.query(ReleaseEvents).\

@@ -205,7 +205,7 @@ class ReleaseEvents(db.Model):
     """A base class to store release events primarily from buildbot."""
     __tablename__ = 'release_events'
     name = db.Column(db.String(100), nullable=False, primary_key=True)
-    sent = db.Column(db.DateTime(pytz.utc), nullable=False)
+    _sent = db.Column('sent', db.DateTime(pytz.utc), nullable=False)
     event_name = db.Column(db.String(150), nullable=False, primary_key=True)
     platform = db.Column(db.String(500), nullable=True)
     results = db.Column(db.Integer(), nullable=False)
@@ -213,10 +213,21 @@ class ReleaseEvents(db.Model):
     chunkTotal = db.Column(db.Integer(), default=0, nullable=False)
     group = db.Column(db.String(100), default=None, nullable=True)
 
+    # Dates are always returned in UTC time and ISO8601 format to make them
+    # as transportable as possible.
+    @hybrid_property
+    def sent(self):
+        return pytz.utc.localize(self._sent).isoformat()
+
+    @sent.setter
+    def sent(self, sent):
+        self._sent = sent
+
     def __init__(self, name, sent, event_name, platform, results, chunkNum=0,
                  chunkTotal=0, group=None):
         self.name = name
-        self.sent = sent
+        if sent:
+            self.sent = sent
         self.event_name = event_name
         self.platform = platform
         self.results = results
@@ -231,185 +242,135 @@ class ReleaseEvents(db.Model):
         return me
 
     @classmethod
-    def createFromRequest(cls, form):
-        return cls(form['name'], form['sent'], form['event_name'],
-                   form['platform'], form['results'], form['chunkNum'],
-                   form['chunkTotal'], form['group'])
+    def createFromForm(cls, releaseName, form):
+        return cls(releaseName, form.sent.data, form.event_name.data,
+                   form.platform.data, form.results.data, form.chunkNum.data,
+                   form.chunkTotal.data, form.group.data)
 
     def __repr__(self):
         return '<ReleaseEvents %r>' % self.name
 
 
-def getEvents(group=None):
-    filters = {}
-    if group is not None:
-        filters['group'] = group
-    events = []
-    if filters:
-        for r in ReleaseEvents.query.filter_by(**filters):
-            events.append(r)
-    else:
-        for r in ReleaseEvents.query.all():
-            events.append(r)
-    return events
+    @classmethod
+    def getEvents(cls, group=None):
+        filters = {}
+        if results is not None:
+            filters['results'] = results
+        if group is not None:
+            filters['group'] = group
+        if filters:
+            return cls.query.filter_by(**filters)
+        else:
+            return cls.query.all()
 
 
-def getStatus(name):
-    if not ReleaseEvents.query.filter_by(name=name).first():
-        return None
-    status = {'tag': tagStatus, 'build': buildStatus, 'repack': repackStatus,
-              'update': updateStatus, 'releasetest': releasetestStatus,
-              'release': releaseStatus, 'postrelease': postreleaseStatus}
-    for step in status:
-        status[step] = status[step](name)
-    status['name'] = name
-    return status
+    @classmethod
+    def getStatus(cls, name):
+        if not cls.query.filter_by(name=name).first():
+            return None
+        status = {'tag': cls.tagStatus, 'build': cls.buildStatus, 'repack': cls.repackStatus,
+                  'update': cls.updateStatus, 'releasetest': cls.releasetestStatus,
+                  'readyforrelease': cls.readyForReleaseStatus, 'postrelease': cls.postreleaseStatus}
+        for step in status:
+            status[step] = status[step](name)
+        status['name'] = name
+        return status
 
 
-def tagStatus(name):
-    tag_events = ReleaseEvents.query.filter_by(name=name, group='tag')
-
-    tags = {'complete': False, 'progress': 0.00}
-    for tag in tag_events:
-        if tag.name:
-            tags['complete'] = True
-            tags['progress'] = 1.00
-    return tags
+    @classmethod
+    def tagStatus(cls, name):
+        if cls.query.filter_by(name=name, group='tag').count() > 0:
+            return {'progress': 1.00}
+        return {'progress': 0.00}
 
 
-def buildStatus(name):
-    build_events = ReleaseEvents.query.filter_by(name=name, group='build')
+    @classmethod
+    def buildStatus(cls, name):
+        build_events = cls.query.filter_by(name=name, group='build')
 
-    builds = {'complete': False, 'platforms': {}, 'progress': 0.00}
-    for platform in getEnUSPlatforms(name):
-        builds['platforms'][platform] = {'complete': False, 'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+        builds = {'platforms': {}, 'progress': 0.00}
+        for platform in cls.getEnUSPlatforms(name):
+            builds['platforms'][platform] = 0.00
 
-    for build in build_events:
-        builds['platforms'][build.platform]['complete'] = True
-        builds['platforms'][build.platform]['chunks']['total'] = 1
-        builds['platforms'][build.platform]['chunks']['num'] = 1
-        builds['platforms'][build.platform]['progress'] = 1.00
+        for build in build_events:
+            builds['platforms'][build.platform] = 1.00
+            builds['progress'] += (1.00/len(builds['platforms']))
 
-    total = 0
-    num = 0
-    for key, build in builds['platforms'].items():
-        total += build['chunks']['total']
-        num += build['chunks']['num']
-    try:
-        builds['progress'] = num / total
-    except ZeroDivisionError:
-        builds['progress'] = 0.00
-
-    if builds['progress'] != 1:
         return builds
-    builds['complete'] = True
-
-    return builds
 
 
-def repackStatus(name):
-    repack_events = ReleaseEvents.query.filter_by(name=name, group='repack')
+    @classmethod
+    def repackStatus(cls, name):
+        repack_events = cls.query.filter_by(name=name, group='repack')
 
-    repacks = {'complete': False, 'platforms': {}, 'progress': 0.00}
-    for platform in getEnUSPlatforms(name):
-        repacks['platforms'][platform] = {'complete': False, 'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
-    for repack in repack_events:
-        if 'complete' not in repack.event_name:
-            repacks['platforms'][repack.platform]['chunks']['total'] = repack.chunkTotal
-            repacks['platforms'][repack.platform]['chunks']['num'] += 1
-            repacks['platforms'][repack.platform]['progress'] += (1.00/repack.chunkTotal) * 1.00
-        else:
-            repacks['platforms'][repack.platform]['complete'] = True
+        repacks = {'platforms': {}, 'progress': 0.00}
+        for platform in cls.getEnUSPlatforms(name):
+            repacks['platforms'][platform] = 0.00
 
-    total = 0
-    num = 0
-    for key, repack in repacks['platforms'].items():
-        total += repack['chunks']['total']
-        num += repack['chunks']['num']
-        repack['progress'] = round(repack['progress'], 2)
-    try:
-        repacks['progress'] = round(float(num) / float(total), 2)
-    except ZeroDivisionError:
-        repacks['progress'] = 0.00
+        for repack in repack_events:
+            if repacks['platforms'][repack.platform] != 1:
+                if 'complete' not in repack.event_name:
+                    repacks['platforms'][repack.platform] += (1.00/repack.chunkTotal)
+                else:
+                    repacks['platforms'][repack.platform] = 1.00
+        repacks['progress'] = (sum(repacks['platforms'].values()) / len(repacks['platforms']))
 
-    if repacks['progress'] != 1:
+        for platform, progress in repacks['platforms'].items():
+            repacks['platforms'][platform] = round(progress, 2)
+
         return repacks
-    repacks['complete'] = True
-
-    return repacks
 
 
-def updateStatus(name):
-    update_events = ReleaseEvents.query.filter_by(name=name, group='update')
-
-    updates = {'complete': False, 'progress': 0.00}
-    for update in update_events:
-        if update.name:
-            updates['complete'] = True
-            updates['progress'] = 1.00
-    return updates
+    @classmethod
+    def updateStatus(cls, name):
+        if cls.query.filter_by(name=name, group='update').count() > 0:
+            return {'progress': 1.00}
+        return {'progress': 0.00}
 
 
-def releasetestStatus(name):
-    releasetest_events = ReleaseEvents.query.filter_by(name=name, group='releasetest')
-
-    releasetests = {'complete': False, 'progress': 0.00}
-    for releasetest in releasetest_events:
-        if releasetest.name:
-            releasetests['complete'] = True
-            releasetests['progress'] = 1.00
-    return releasetests
+    @classmethod
+    def releasetestStatus(cls, name):
+        if cls.query.filter_by(name=name, group='releasetest').count() > 0:
+            return {'progress': 1.00}
+        return {'progress': 0.00}
 
 
-def releaseStatus(name):
-    update_verify_events = ReleaseEvents.query.filter_by(name=name, group='update_verify')
-    release_events = ReleaseEvents.query.filter_by(name=name, group='release')
+    @classmethod
+    def readyForReleaseStatus(cls, name):
+        update_verify_events = cls.query.filter_by(name=name, group='update_verify')
+        release_events = cls.query.filter_by(name=name, group='release')
 
-    update_verifys = {}
-    for platform in getEnUSPlatforms(name):
-        update_verifys[platform] = {'complete': False, 'chunks': {'num': 0, 'total': 0}, 'progress': 0.00}
+        update_verifys = {}
+        for platform in cls.getEnUSPlatforms(name):
+            update_verifys[platform] = 0.00
 
-    for update_verify in update_verify_events:
-        if 'complete' not in update_verify.event_name:
-            update_verifys[update_verify.platform]['chunks']['total'] = update_verify.chunkTotal
-            update_verifys[update_verify.platform]['chunks']['num'] += 1
-            update_verifys[update_verify.platform]['progress'] += (1.00/update_verify.chunkTotal) * 1.00
-            if update_verifys[update_verify.platform]['chunks']['total'] == \
-                    update_verifys[update_verify.platform]['chunks']['num']:
-                update_verifys[update_verify.platform]['complete'] = True
-        else:
-            update_verifys[update_verify.platform]['complete'] = True
-    data = {'complete': False, 'platforms': update_verifys, 'progress': 0.00}
+        for update_verify in update_verify_events:
+            if update_verifys[update_verify.platform] != 1:
+                if 'complete' not in update_verify.event_name:
+                    update_verifys[update_verify.platform] += (1.00/update_verify.chunkTotal)
+                else:
+                    update_verifys[update_verify.platform] = 1.00
+        data = {'platforms': update_verifys, 'progress': 0.00}
+        data['progress'] = (sum(data['platforms'].values()) / len(data['platforms']))
 
-    total = 0
-    num = 0
-    for key, update_verify in data['platforms'].items():
-        total += update_verify['chunks']['total']
-        num += update_verify['chunks']['num']
-        update_verify['progress'] = round(update_verify['progress'], 2)
-    try:
-        data['progress'] = round(float(num) / float(total), 2)
-    except ZeroDivisionError:
-        data['progress'] = 0.00
+        for platform, progress in data['platforms'].items():
+            data['platforms'][platform] = round(progress, 2)
 
-    if release_events.first():
-        data['complete'] = True
+        if release_events.first():
+            data['progress'] = 1.00
 
-    return data
+        return data
 
 
-def postreleaseStatus(name):
-    events = ReleaseEvents.query.filter_by(name=name)
-
-    for event in events:
-        if 'postrelease' in event.event_name:
-            return {'complete': True, 'progress': 1.00}
-    return {'complete': False, 'progress': 0.00}
+    @classmethod
+    def postreleaseStatus(cls, name):
+        if cls.query.filter_by(name=name, group='postrelease').count() > 0:
+            return {'progress': 1.00}
+        return {'progress': 0.00}
 
 
-def getEnUSPlatforms(name):
-    release_tables = {'Firefox': FirefoxRelease, 'Fennec': FennecRelease,
-                      'Thunderbird': ThunderbirdRelease}
-    product = name.split('-')[0].title()
-    release = release_tables[product].query.filter_by(name=name)
-    return json.loads(release[0].enUSPlatforms)
+    @classmethod
+    def getEnUSPlatforms(cls, name):
+        releaseTable = getReleaseTable(name.split('-')[0].title())
+        release = releaseTable.query.filter_by(name=name).first()
+        return json.loads(release.enUSPlatforms)

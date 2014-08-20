@@ -352,6 +352,11 @@ h4 {
     text-align: center;
 }
 
+#collapse-hidden {
+    padding-top: 48px;
+    text-align: center;
+}
+
 /* disable column highlighting when selected */
 table.dataTable tr.odd td.sorting_1 { background-color: transparent; }
 table.dataTable tr.even td.sorting_1 { background-color: transparent; }

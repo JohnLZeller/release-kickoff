@@ -43,13 +43,14 @@
             </div>
           </div>
         {% endfor %}
+        </div>
+        <div id="collapse-button">
+          <a id="collapseText{{ loop.index }}" onClick="changeCollapseText({{ loop.index }});" data-toggle="collapse" data-parent="#accordion" href="#collapse{{ step.title() }}"><i class="fa fa-chevron-down"></i> expand <i class="fa fa-chevron-down"></i></a>
+        </div>
       {% else %}
-        <div class="sub-progress text-center">Nothing to show yet!</div>
+        </div>
+        <div id="collapse-hidden"></div>
       {% endif %}
-    </div>
-    <div id="collapse-button">
-      <a id="collapseText{{ loop.index }}" onClick="changeCollapseText({{ loop.index }});" data-toggle="collapse" data-parent="#accordion" href="#collapse{{ step.title() }}"><i class="fa fa-chevron-down"></i> expand <i class="fa fa-chevron-down"></i></a>
-    </div>
   </div>
 {% endfor %}
 <div style="margin-bottom: 40px;"></div>

@@ -37,7 +37,7 @@ body {
     font-weight: bold;
 }
 
-.complete {
+.status_complete {
     color: green;
     font-weight: bold;
 }

@@ -36,6 +36,12 @@ body {
     color: red;
     font-weight: bold;
 }
+
+.complete {
+    color: green;
+    font-weight: bold;
+}
+
 /* submit release form advanced fileds*/
 .advanced {
     border-top:2px solid LightGray;

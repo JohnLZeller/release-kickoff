@@ -17,7 +17,7 @@
   <div id="progress-container">
     <h3>
       <strong>{{ step.title() }}</strong> 
-      {% if status[step]['complete'] %}
+      {% if status[step]['progress'] %}
         <i class="fa fa-check" style="color: green;"></i>
       {% elif status[step]['progress'] > 0 %}
         <i class="fa fa-spinner fa-spin"></i>
@@ -31,15 +31,15 @@
         {% for platform, data in status[step]['platforms'].items() %}
           <div id="{% if loop.first %}top-{% endif %}sub-progress-container" class="row">
             <h4 class="col-lg-2 col-lg-push-2">
-              {% if data['complete'] %}
+              {% if data %}
                 <i class="fa fa-check" style="color: green;"></i> 
-              {% elif data['progress'] > 0 %}
+              {% elif data > 0 %}
                 <i class="fa fa-spinner fa-spin"></i> 
               {% endif %}
               {{ platform.title() }}
             </h4>
             <div id="sub-progress" class="col-lg-6 col-lg-push-2 progress">
-              <div id="sub-progress-bar" style="width: {{ data['progress'] * 106 }}%" class="progress-bar progress-bar-warning {% if data['progress'] > 0 %}progress-bar-striped active{% endif %}" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+              <div id="sub-progress-bar" style="width: {{ data * 106 }}%" class="progress-bar progress-bar-warning {% if data > 0 %}progress-bar-striped active{% endif %}" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
           </div>
         {% endfor %}

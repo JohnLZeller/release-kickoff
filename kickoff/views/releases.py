@@ -7,7 +7,7 @@ from flask.views import MethodView
 
 from kickoff import db
 from kickoff.log import cef_event, CEF_WARN, CEF_INFO
-from kickoff.model import getReleaseTable, getReleases, getEvents, getStatus, ReleaseEvents
+from kickoff.model import getReleaseTable, getReleases, ReleaseEvents
 from kickoff.views.forms import ReleasesForm, ReleaseAPIForm, getReleaseForm
 
 log = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ class Releases(MethodView):
         statuses = []
         for release in releases:
             if release.ready is True and release.complete is True:
-                status = getStatus(release.name)
+                status = ReleaseEvents.getStatus(release.name)
                 if status:
                     statuses.append(status)
         return render_template('releases.html', releases=sortedReleases(), statuses=statuses, form=form)

@@ -9,20 +9,20 @@
     <th>Repacks</th>
     <th>Update</th>
     <th>Releasetest</th>
-    <th>Release</th>
+    <th>ReadyForRelease</th>
     <th>Postrelease</th>
 </tr>
 </thead>
 {% endif %}
 <tr class='complete'>
   <td><a href="status/{{ sta['name'] }}.html">{{ sta['name'] }}</a></td>
-  <td>{{ sta['tag']['complete'] }}</td>
-  <td>{{ sta['build']['complete'] }}</td>
-  <td>{{ sta['repack']['complete'] }}</td>
-  <td>{{ sta['update']['complete'] }}</td>
-  <td>{{ sta['releasetest']['complete'] }}</td>
-  <td>{{ sta['release']['complete'] }}</td>
-  <td>{{ sta['postrelease']['complete'] }}</td>
+  <td>{% if sta['tag']['progress'] %}<span <span class='complete'>Complete</span></span>{% elif sta['tag']['progress'] > 0 %}Running{% endif %}</td>
+  <td>{% if sta['build']['progress'] %}<span class='complete'>Complete</span>{% elif sta['build']['progress'] > 0 %}Running{% endif %}</td>
+  <td>{% if sta['repack']['progress'] %}<span class='complete'>Complete</span>{% elif sta['repack']['progress'] > 0 %}Running{% endif %}</td>
+  <td>{% if sta['update']['progress'] %}<span class='complete'>Complete</span>{% elif sta['update']['progress'] > 0 %}Running{% endif %}</td>
+  <td>{% if sta['releasetest']['progress'] %}<span class='complete'>Complete</span>{% elif sta['releasetest']['progress'] > 0 %}Running{% endif %}</td>
+  <td>{% if sta['readyforrelease']['progress'] %}<span class='complete'>Complete</span>{% elif sta['readyforrelease']['progress'] > 0 %}Running{% endif %}</td>
+  <td>{% if sta['postrelease']['progress'] %}<span class='complete'>Complete</span>{% elif sta['postrelease']['progress'] > 0 %}Running{% endif %}</td>
 {% if loop.last %}
 </table>
 {% endif %}

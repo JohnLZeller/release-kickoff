@@ -34,6 +34,17 @@ function viewReleases(){
         return JSON.parse( localStorage.getItem('DataTables_reviewed'+window.location.pathname) );
     }
   });
+  $( "#running" ).dataTable({
+    "bJQueryUI": true,
+    "aaSorting": [[ 2, "desc" ]],
+    "bStateSave": true,
+    "fnStateSave": function (oSettings, oData) {
+        localStorage.setItem( 'DataTables_running'+window.location.pathname, JSON.stringify(oData) );
+    },
+    "fnStateLoad": function (oSettings) {
+        return JSON.parse( localStorage.getItem('DataTables_running'+window.location.pathname) );
+    }
+  });
   $( "#complete" ).dataTable({
     "bJQueryUI": true,
     "aaSorting": [[ 2, "desc" ]],

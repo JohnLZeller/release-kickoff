@@ -1,6 +1,6 @@
 {% for sta in statuses %}
 {% if loop.first %}
-<table id="complete">
+<table id="running">
 <thead>
 <tr>
     <th>Name</th>
@@ -14,7 +14,7 @@
 </tr>
 </thead>
 {% endif %}
-<tr class='complete'>
+<tr class='running'>
   <td><a href="releases/{{ sta['name'] }}/status.html">{{ sta['name'] }}</a></td>
   <td>{% if sta['tag']['progress'] == 1 %}<span class='status_complete'>Complete</span></span>{% elif sta['tag']['progress'] > 0 %}Running{% endif %}</td>
   <td>{% if sta['build']['progress'] == 1 %}<span class='status_complete'>Complete</span>{% elif sta['build']['progress'] > 0 %}Running{% endif %}</td>

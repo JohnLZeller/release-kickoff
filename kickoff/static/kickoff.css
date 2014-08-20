@@ -174,10 +174,12 @@ body {
 }
 
 th.incomplete,
+th.running,
 th.complete {
     font-size:12px;
 }
 tr.incomplete,
+tr.running,
 tr.complete {
     font-size:10px;
 }

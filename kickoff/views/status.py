@@ -87,8 +87,8 @@ class StatusesAPI(MethodView):
 class Status(MethodView):
 
     def get(self, releaseName):
-        status_order = ['tag', 'build', 'repack', 'update', 'releasetest', 'readyforrelease', 'postrelease']
-        return render_template('status.html', status=ReleaseEvents.getStatus(releaseName), status_order=status_order)
+        status_groups = ['tag', 'build', 'repack', 'update', 'releasetest', 'readyforrelease', 'postrelease']
+        return render_template('status.html', status=ReleaseEvents.getStatus(releaseName), status_groups=status_groups)
 
 
 class Statuses(MethodView):

@@ -13,22 +13,22 @@
   <h2>{{ status['name'] }}</h2>
 </div>
 
-{% for step in status_order %}
+{% for group in status_groups %}
   <div id="progress-container">
     <h3>
-      <strong>{{ step.title() }}</strong> 
-      {% if status[step]['progress'] == 1 %}
+      <strong>{{ group.title() }}</strong> 
+      {% if status[group]['progress'] == 1 %}
         <i class="fa fa-check" style="color: green;"></i>
-      {% elif status[step]['progress'] > 0 %}
+      {% elif status[group]['progress'] > 0 %}
         <i class="fa fa-spinner fa-spin"></i>
       {% endif %}
     </h3>
     <div id="main-progress" class="progress">
-      <div class="progress-bar progress-bar-info {% if 0 < status[step]['progress'] < 1 %}progress-bar-striped active{% endif %}" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{ status[step]['progress'] * 100 }}%"></div>
+      <div class="progress-bar progress-bar-info {% if 0 < status[group]['progress'] < 1 %}progress-bar-striped active{% endif %}" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{ status[group]['progress'] * 100 }}%"></div>
     </div>
-    <div id="collapse{{ step.title() }}" class="panel-collapse collapse out collapse-progress">
-      {% if status[step].get('platforms') %}
-        {% for platform, data in status[step]['platforms'].items() %}
+    <div id="collapse{{ group.title() }}" class="panel-collapse collapse out collapse-progress">
+      {% if status[group].get('platforms') %}
+        {% for platform, data in status[group]['platforms'].items() %}
           <div id="{% if loop.first %}top-{% endif %}sub-progress-container" class="row">
             <h4 class="col-lg-2 col-lg-push-2">
               {% if data == 1 %}
@@ -45,7 +45,7 @@
         {% endfor %}
         </div>
         <div id="collapse-button">
-          <a id="collapseText{{ loop.index }}" onClick="changeCollapseText({{ loop.index }});" data-toggle="collapse" data-parent="#accordion" href="#collapse{{ step.title() }}"><i class="fa fa-chevron-down"></i> expand <i class="fa fa-chevron-down"></i></a>
+          <a id="collapseText{{ loop.index }}" onClick="changeCollapseText({{ loop.index }});" data-toggle="collapse" data-parent="#accordion" href="#collapse{{ group.title() }}"><i class="fa fa-chevron-down"></i> expand <i class="fa fa-chevron-down"></i></a>
         </div>
       {% else %}
         </div>
